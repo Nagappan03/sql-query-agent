@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -14,16 +15,4 @@ model User {
   name         String?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
-  queryHistory QueryHistory[]
-}
-
-model QueryHistory {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  prompt      String
-  generatedSql String
-  explanation String?
-  resultCount Int?
-  executedAt  DateTime @default(now())
 }

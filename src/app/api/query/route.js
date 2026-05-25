@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { getDemoSchema } from '@/lib/schema'
 import { executeSQL } from '@/lib/executeSQL'
-import { prisma } from '@/lib/prisma'
 import Anthropic from '@anthropic-ai/sdk'
 
 const anthropic = new Anthropic({
@@ -72,7 +71,6 @@ Rules:
         let sqlQuery = null
         let sqlExplanation = null
         let queryResult = null
-        let finalExplanation = null
 
         // Round 1 — send prompt to Claude with tool available
         const round1 = await anthropic.messages.create({
@@ -104,53 +102,9 @@ Rules:
         // Execute the SQL on our PostgreSQL database
         queryResult = await executeSQL(sqlQuery)
 
-        // Round 2 — send tool result back to Claude for explanation
-        const round2 = await anthropic.messages.create({
-            model: 'claude-haiku-4-5',
-            max_tokens: 1024,
-            system: systemPrompt,
-            tools,
-            messages: [
-                ...messages,
-                { role: 'assistant', content: round1.content },
-                {
-                    role: 'user',
-                    content: [
-                        {
-                            type: 'tool_result',
-                            tool_use_id: toolUseBlock.id,
-                            content: queryResult.error
-                                ? `Error executing query: ${queryResult.error}`
-                                : JSON.stringify({
-                                    rowCount: queryResult.rowCount,
-                                    columns: queryResult.columns,
-                                    rows: queryResult.rows.slice(0, 50), // cap at 50 rows for context
-                                }),
-                        },
-                    ],
-                },
-            ],
-        })
-
-        // Extract Claude's final explanation
-        const finalText = round2.content.find((b) => b.type === 'text')
-        finalExplanation = finalText?.text || 'Query executed successfully.'
-
-        // Save to query history
-        await prisma.queryHistory.create({
-            data: {
-                userId: session.user.id,
-                prompt,
-                generatedSql: sqlQuery,
-                explanation: finalExplanation,
-                resultCount: queryResult.rowCount ?? 0,
-            },
-        })
-
         return NextResponse.json({
             sql: sqlQuery,
             sqlExplanation,
-            explanation: finalExplanation,
             result: queryResult,
         })
     } catch (err) {
