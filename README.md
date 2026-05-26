@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# SQL Query Agent
 
-## Getting Started
+A natural language to SQL agent powered by Claude's tool calling API. Describe what data you need in plain English — the agent generates the query, executes it against a live PostgreSQL database, and returns the results.
 
-First, run the development server:
+🔗 **Live demo:** [sql-query-agent.vercel.app](https://sql-query-agent.vercel.app)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## What it does
+
+- **Natural language input** — ask questions like "show me the top 5 customers by order value"
+- **Agentic tool calling** — Claude decides to call `execute_sql`, generates the query, we execute it, results come back
+- **Live execution** — queries run against a real PostgreSQL database, not mocked
+- **Schema-aware** — Claude reads the live database schema at runtime so queries are always accurate
+- **Result display** — clean tabular view of query results with column headers
+
+---
+
+## Architecture
+
+```
+User prompt
+  → Claude Haiku 4.5 (with execute_sql tool defined)
+    → Claude calls execute_sql("SELECT ...")
+      → App executes query on PostgreSQL
+        → Results returned to user
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The key AI engineering pattern here is **tool use / function calling** — Claude doesn't just generate SQL text, it acts as an agent that decides to invoke a tool, we run it, and return structured results.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Tech stack
 
-## Learn More
+- **Frontend:** Next.js 16 (App Router), Tailwind CSS
+- **Auth:** NextAuth.js (credentials)
+- **ORM:** Prisma 6
+- **Database:** PostgreSQL (Supabase)
+- **LLM:** Claude Haiku 4.5 via Anthropic API
+- **Deployment:** Vercel
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Demo database
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Ships with a pre-seeded e-commerce schema:
 
-## Deploy on Vercel
+| Table | Description |
+|---|---|
+| `customers` | 10 customers across multiple countries |
+| `products` | 15 products across 5 categories |
+| `categories` | Electronics, Clothing, Books, Sports, Home & Garden |
+| `orders` | 12 orders with various statuses |
+| `order_items` | Line items linking orders to products |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Running locally
+
+```bash
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.example .env.local
+# Fill in DATABASE_URL, NEXTAUTH_SECRET, ANTHROPIC_API_KEY
+
+# Run migrations
+npx prisma migrate dev
+
+# Seed demo data
+npm run seed
+
+# Start dev server
+npm run dev
+```
+
+---
+
+## Future improvements
+
+- Accept user-provided PostgreSQL connection strings to query any database
+- Support MySQL, SQLite, and other databases
+- Query history and saved queries
+- Export results as CSV
+- Natural language chart generation from query results
