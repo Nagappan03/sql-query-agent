@@ -2,7 +2,7 @@
 
 A natural language to SQL agent powered by Claude's tool calling API. Describe what data you need in plain English — the agent generates the query, executes it against a live PostgreSQL database, and returns the results.
 
-🔗 **Live demo:** [sql-query-agent.vercel.app](https://sql-query-agent.vercel.app)
+🔗 **Live demo:** [sql-query-agent-five.vercel.app](https://sql-query-agent-five.vercel.app)
 
 ---
 
